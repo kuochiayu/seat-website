@@ -75,12 +75,12 @@
         seatRef.once("value").then(snapshot => {
           if (!snapshot.exists() || snapshot.val().status === "available") {
 
-            // 釋放舊座位（但只釋放是自己選的）
+            // ✅ 若有舊座位 → 先確認是自己選的才釋放（只改 status，不刪除 name）
             if (selectedSeat && selectedSeat !== seatNumber) {
               db.ref("seats/" + selectedSeat).once("value").then(oldSnap => {
                 const oldData = oldSnap.val();
                 if (oldData && oldData.name === username) {
-                  db.ref("seats/" + selectedSeat).set({ status: "available" });
+                  db.ref("seats/" + selectedSeat + "/status").set("available");
                   const prevSeatDiv = document.querySelector(`[data-seat-number='${selectedSeat}']`);
                   if (prevSeatDiv) {
                     prevSeatDiv.className = "seat available";
@@ -89,7 +89,7 @@
               });
             }
 
-            // 設定新座位
+            // 設定新座位為選取狀態
             db.ref("seats/" + seatNumber).set({
               status: "selected",
               name: username
@@ -120,7 +120,7 @@
       });
     });
 
-    // 確認按鈕
+    // 確定選擇後跳轉
     function confirmSeat() {
       if (!selectedSeat) {
         alert("請先選擇一個座位！");
