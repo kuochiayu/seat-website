@@ -30,8 +30,8 @@
 <body>
 
   <h1>選擇你的座位</h1>
+  <p><strong>目前使用者：</strong><span id="current-user"></span></p>
   <div id="seat-container"></div>
-
   <p id="current-selection">你尚未選擇座位</p>
   <button onclick="confirmSeat()">✅ 確定選擇</button>
 
@@ -51,6 +51,8 @@
     const db = firebase.database();
 
     const username = localStorage.getItem("username");
+    document.getElementById("current-user").textContent = username || "未知";
+
     if (!username) {
       alert("請先輸入姓名！");
       window.location.href = "index.html";
@@ -59,9 +61,9 @@
     const seatContainer = document.getElementById("seat-container");
     const selectionText = document.getElementById("current-selection");
     const totalSeats = 700;
-    let selectedSeat = localStorage.getItem("selectedSeat") || null;
+    let selectedSeat = null;
 
-    // 建立座位
+    // 建立座位按鈕
     for (let i = 1; i <= totalSeats; i++) {
       const seat = document.createElement("div");
       seat.className = "seat available";
@@ -73,23 +75,20 @@
         const seatRef = db.ref("seats/" + seatNumber);
 
         seatRef.once("value").then(snapshot => {
-          if (!snapshot.exists() || snapshot.val().status === "available") {
+          const data = snapshot.val();
 
-            // ✅ 若有舊座位 → 先確認是自己選的才釋放（只改 status，不刪除 name）
+          if (!data || data.status === "available") {
+
+            // 若有舊座位（自己選的）先釋放
             if (selectedSeat && selectedSeat !== seatNumber) {
-              db.ref("seats/" + selectedSeat).once("value").then(oldSnap => {
-                const oldData = oldSnap.val();
-                if (oldData && oldData.name === username) {
-                  db.ref("seats/" + selectedSeat + "/status").set("available");
-                  const prevSeatDiv = document.querySelector(`[data-seat-number='${selectedSeat}']`);
-                  if (prevSeatDiv) {
-                    prevSeatDiv.className = "seat available";
-                  }
-                }
-              });
+              db.ref("seats/" + selectedSeat + "/status").set("available");
+              const prevSeatDiv = document.querySelector(`[data-seat-number='${selectedSeat}']`);
+              if (prevSeatDiv) {
+                prevSeatDiv.className = "seat available";
+              }
             }
 
-            // 設定新座位為選取狀態
+            // 設定新座位
             db.ref("seats/" + seatNumber).set({
               status: "selected",
               name: username
@@ -108,7 +107,7 @@
       seatContainer.appendChild(seat);
     }
 
-    // 即時監聽 Firebase 更新畫面
+    // 監聽 Firebase 狀態 → 更新畫面
     db.ref("seats").on("value", snapshot => {
       snapshot.forEach(child => {
         const seatNumber = child.key;
@@ -120,7 +119,6 @@
       });
     });
 
-    // 確定選擇後跳轉
     function confirmSeat() {
       if (!selectedSeat) {
         alert("請先選擇一個座位！");

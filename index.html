@@ -2,24 +2,69 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8">
-  <title>報到</title>
+  <title>輸入姓名</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body { font-family: sans-serif; text-align: center; padding: 50px; }
+    input, button {
+      font-size: 18px;
+      padding: 10px;
+      margin: 10px;
+    }
+  </style>
 </head>
 <body>
-  <h1>請輸入你的姓名</h1>
-  <input type="text" id="username" placeholder="請輸入姓名" />
-  <button onclick="saveName()">下一步</button>
+
+  <h1>歡迎報名選座位</h1>
+  <p>請輸入您的姓名：</p>
+  <input type="text" id="nameInput" placeholder="例如：小明">
+  <br>
+  <button onclick="checkAndStart()">開始選位 ➡️</button>
 
   <script>
-    function saveName() {
-      const name = document.getElementById('username').value.trim();
-      if (name === "") {
-        alert("請輸入姓名");
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVTjVVeQ1kD4MEhqN-hOEXSLjgSV2txWM",
+      authDomain: "seat-e2f35.firebaseapp.com",
+      databaseURL: "https://seat-e2f35-default-rtdb.firebaseio.com",
+      projectId: "seat-e2f35",
+      storageBucket: "seat-e2f35.firebasestorage.app",
+      messagingSenderId: "510963570329",
+      appId: "1:510963570329:web:03e6ee71e719f294454a08",
+      measurementId: "G-W2N7BC08DZ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    function checkAndStart() {
+      const name = document.getElementById("nameInput").value.trim();
+
+      if (!name) {
+        alert("請輸入姓名！");
         return;
       }
-      // 存到瀏覽器 LocalStorage
-      localStorage.setItem("username", name);
-      window.location.href = "seat.html"; // 前往選座頁面
+
+      // ✅ 檢查這個名字有沒有被使用過
+      db.ref("seats").once("value").then(snapshot => {
+        let alreadyUsed = false;
+
+        snapshot.forEach(child => {
+          const data = child.val();
+          if (data.name === name && data.status === "selected") {
+            alreadyUsed = true;
+          }
+        });
+
+        if (alreadyUsed) {
+          alert("這個名字已經選過座位囉，請勿重複報名！");
+        } else {
+          localStorage.setItem("username", name);
+          window.location.href = "seats.html";
+        }
+      });
     }
   </script>
+
 </body>
 </html>
