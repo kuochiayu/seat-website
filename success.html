@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>完成報到</title>
+</head>
+<body>
+  <h1 id="result"></h1>
+
+  <script>
+    const name = localStorage.getItem("username");
+    const seat = localStorage.getItem("selectedSeat");
+
+    if (!name || !seat) {
+      document.getElementById("result").textContent = "錯誤：無法找到報到資料";
+    } else {
+      document.getElementById("result").textContent = `${name}，你選擇的座位是第 ${seat} 號 🎉`;
+    }
+  </script>
+</body>
+</html>

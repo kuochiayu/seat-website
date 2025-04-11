@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>後台報名資訊</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; }
+    th, td { border: 1px solid #aaa; padding: 8px; text-align: center; }
+    th { background-color: #eee; }
+  </style>
+</head>
+<body>
+
+  <h1>後台報名資訊</h1>
+  <p id="summary">載入中...</p>
+  <table>
+    <thead>
+      <tr>
+        <th>座位號碼</th>
+        <th>使用者名稱</th>
+      </tr>
+    </thead>
+    <tbody id="seatTable"></tbody>
+  </table>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVTjVVeQ1kD4MEhqN-hOEXSLjgSV2txWM",
+      authDomain: "seat-e2f35.firebaseapp.com",
+      databaseURL: "https://seat-e2f35-default-rtdb.firebaseio.com",
+      projectId: "seat-e2f35",
+      storageBucket: "seat-e2f35.firebasestorage.app",
+      messagingSenderId: "510963570329",
+      appId: "1:510963570329:web:03e6ee71e719f294454a08",
+      measurementId: "G-W2N7BC08DZ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const TOTAL_SEATS = 700;
+    const table = document.getElementById("seatTable");
+    const summary = document.getElementById("summary");
+    let selected = 0;
+
+    db.ref("seats").once("value").then(snapshot => {
+      table.innerHTML = "";
+
+      snapshot.forEach(child => {
+        const seatNumber = child.key;
+        const data = child.val();
+
+        if (data.status === "selected") {
+          selected++;
+
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${seatNumber}</td>
+            <td>${data.name || "未填寫"}</td>
+          `;
+          table.appendChild(row);
+        }
+      });
+
+      const remaining = TOTAL_SEATS - selected;
+      summary.textContent = `目前總座位數：${TOTAL_SEATS}　已選：${selected}　剩下：${remaining}`;
+    });
+  </script>
+
+</body>
+</html>

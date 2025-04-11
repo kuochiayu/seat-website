@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <title>選擇座位</title>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+  <style>
+    .seat {
+      width: 30px;
+      height: 30px;
+      margin: 5px;
+      display: inline-block;
+      text-align: center;
+      line-height: 30px;
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .available { background-color: #8BC34A; color: white; }
+    .selected { background-color: #FF5722; color: white; }
+    #current-selection {
+      margin-top: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>選擇你的座位</h1>
+  <div id="seat-container"></div>
+
+  <p id="current-selection">你尚未選擇座位</p>
+  <button onclick="confirmSeat()">✅ 確定選擇</button>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDVTjVVeQ1kD4MEhqN-hOEXSLjgSV2txWM",
+      authDomain: "seat-e2f35.firebaseapp.com",
+      databaseURL: "https://seat-e2f35-default-rtdb.firebaseio.com",
+      projectId: "seat-e2f35",
+      storageBucket: "seat-e2f35.firebasestorage.app",
+      messagingSenderId: "510963570329",
+      appId: "1:510963570329:web:03e6ee71e719f294454a08",
+      measurementId: "G-W2N7BC08DZ"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const username = localStorage.getItem("username");
+    if (!username) {
+      alert("請先輸入姓名！");
+      window.location.href = "index.html";
+    }
+
+    const seatContainer = document.getElementById("seat-container");
+    const selectionText = document.getElementById("current-selection");
+    const totalSeats = 700;
+    let selectedSeat = localStorage.getItem("selectedSeat") || null;
+
+    for (let i = 1; i <= totalSeats; i++) {
+      const seat = document.createElement("div");
+      seat.className = "seat available";
+      seat.textContent = i;
+      seat.dataset.seatNumber = i;
+
+      seat.addEventListener("click", () => {
+        const seatNumber = seat.dataset.seatNumber;
+        const seatRef = db.ref("seats/" + seatNumber);
+
+        seatRef.once("value").then(snapshot => {
+          if (!snapshot.exists() || snapshot.val().status === "available") {
+
+            // 如果之前有選別的座位，釋放它
+            if (selectedSeat && selectedSeat !== seatNumber) {
+              db.ref("seats/" + selectedSeat).set({
+                status: "available"
+              });
+            }
+
+            // 設定新選擇座位
+            db.ref("seats/" + seatNumber).set({
+              status: "selected",
+              name: username
+            });
+
+            selectedSeat = seatNumber;
+            localStorage.setItem("selectedSeat", seatNumber);
+            selectionText.textContent = `你目前選擇的是：第 ${seatNumber} 號`;
+
+          } else {
+            alert("這個座位已經被選走了！");
+          }
+        });
+      });
+
+      seatContainer.appendChild(seat);
+    }
+
+    // Firebase 實時更新顏色
+    db.ref("seats").on("value", snapshot => {
+      snapshot.forEach(child => {
+        const seatNumber = child.key;
+        const data = child.val();
+        const seatDiv = document.querySelector(`[data-seat-number='${seatNumber}']`);
+        if (seatDiv) {
+          seatDiv.className = "seat " + (data.status === "selected" ? "selected" : "available");
+        }
+      });
+    });
+
+    // 確定按鈕
+    function confirmSeat() {
+      if (!selectedSeat) {
+        alert("請先選擇一個座位！");
+        return;
+      }
+      window.location.href = "success.html";
+    }
+  </script>
+
+</body>
+</html>
