@@ -61,6 +61,7 @@
     const totalSeats = 700;
     let selectedSeat = localStorage.getItem("selectedSeat") || null;
 
+    // 建立座位
     for (let i = 1; i <= totalSeats; i++) {
       const seat = document.createElement("div");
       seat.className = "seat available";
@@ -74,14 +75,21 @@
         seatRef.once("value").then(snapshot => {
           if (!snapshot.exists() || snapshot.val().status === "available") {
 
-            // 如果之前有選別的座位，釋放它
+            // 釋放舊座位（但只釋放是自己選的）
             if (selectedSeat && selectedSeat !== seatNumber) {
-              db.ref("seats/" + selectedSeat).set({
-                status: "available"
+              db.ref("seats/" + selectedSeat).once("value").then(oldSnap => {
+                const oldData = oldSnap.val();
+                if (oldData && oldData.name === username) {
+                  db.ref("seats/" + selectedSeat).set({ status: "available" });
+                  const prevSeatDiv = document.querySelector(`[data-seat-number='${selectedSeat}']`);
+                  if (prevSeatDiv) {
+                    prevSeatDiv.className = "seat available";
+                  }
+                }
               });
             }
 
-            // 設定新選擇座位
+            // 設定新座位
             db.ref("seats/" + seatNumber).set({
               status: "selected",
               name: username
@@ -100,7 +108,7 @@
       seatContainer.appendChild(seat);
     }
 
-    // Firebase 實時更新顏色
+    // 即時監聽 Firebase 更新畫面
     db.ref("seats").on("value", snapshot => {
       snapshot.forEach(child => {
         const seatNumber = child.key;
@@ -112,7 +120,7 @@
       });
     });
 
-    // 確定按鈕
+    // 確認按鈕
     function confirmSeat() {
       if (!selectedSeat) {
         alert("請先選擇一個座位！");
